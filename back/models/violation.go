@@ -1,25 +1,50 @@
 package models
 
 import (
+	"errors"
 	"strings"
+	"time"
 )
 
 type Violation struct {
-	Path        string `json:"path"`
-	Type        string `json:"type"`
-	IsCritical  bool   `json:"is_critical"`
+	ID int64 `json:"id"`
+
+	AuditID int64 `json:"audit_id"`
+	RuleID  int64 `json:"rule_id"`
+
+	RuleType RuleType `json:"rule_type"`
+	Severity Severity `json:"severity"`
+
+	Title       string `json:"title"`
 	Description string `json:"description"`
+
+	EntityType string `json:"entity_type"`
+	EntityKey  string `json:"entity_key"`
+
+	CreatedAt time.Time `json:"created_at"`
 }
 
-func (v *Violation) EvaluateSeverity() {
-	criticalPaths := []string{"/etc/passwd", "/etc/shadow", "/root/.ssh"}
-	for _, cp := range criticalPaths {
-		if strings.Contains(v.Path, cp) {
-			v.IsCritical = true
-			v.Description = "CRITICAL: System security file modified!"
-			return
-		}
+func (v Violation) IsCritical() bool {
+	return v.Severity == SeverityCritical
+}
+
+func (v Violation) IsHighPriority() bool {
+	return v.Severity == SeverityCritical ||
+		v.Severity == SeverityHigh
+}
+
+func (v Violation) Validate() error {
+	if v.AuditID <= 0 {
+		return errors.New("invalid audit id")
 	}
-	v.IsCritical = false
-	v.Description = "Standard file change detected"
+
+	if v.RuleType == "" {
+		return errors.New("rule type cannot be empty")
+	}
+
+	if strings.TrimSpace(v.Title) == "" {
+		return errors.New("violation title cannot be empty")
+	}
+
+	return nil
 }
