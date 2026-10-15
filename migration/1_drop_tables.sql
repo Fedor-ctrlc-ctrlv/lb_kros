@@ -1,0 +1,20 @@
+
+BEGIN;
+
+DROP TABLE IF EXISTS violations;
+DROP TABLE IF EXISTS cron_jobs;
+DROP TABLE IF EXISTS services;
+DROP TABLE IF EXISTS linux_groups;
+DROP TABLE IF EXISTS linux_users;
+DROP TABLE IF EXISTS fs_nodes;
+
+ALTER TABLE IF EXISTS hosts
+    DROP CONSTRAINT IF EXISTS hosts_baseline_audit_fk;
+
+DROP TABLE IF EXISTS audits;
+DROP TABLE IF EXISTS hosts;
+DROP TABLE IF EXISTS policy_rules;
+DROP TABLE IF EXISTS security_policies;
+DROP TABLE IF EXISTS app_users;
+
+COMMIT;
