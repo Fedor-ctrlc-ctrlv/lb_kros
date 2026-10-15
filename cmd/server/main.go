@@ -42,15 +42,19 @@ func main() {
 	policyService := services.NewPolicyService(policyRepo)
 	policyHandler := handlers.NewPolicyHandler(policyService)
 
-	// Audit and Snapshot
 	auditRepo := repository.NewAuditRepository(db)
 	auditService := services.NewAuditService(auditRepo)
 	auditHandler := handlers.NewAuditHandler(auditService)
+
+	baselineRepo := repository.NewBaselineRepository(db)
+	baselineService := services.NewBaselineService(baselineRepo)
+	baselineHandler := handlers.NewBaselineHandler(baselineService)
 
 	router := api.NewRouter(
 		hostHandler,
 		policyHandler,
 		auditHandler,
+		baselineHandler,
 	)
 
 	server := &http.Server{
