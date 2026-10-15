@@ -1,71 +1,86 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log"
-	"web-api/back/models"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"web-api/back/api"
+	"web-api/back/api/handlers"
+	"web-api/back/database"
+	"web-api/back/repository"
+	"web-api/back/services"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	fmt.Println("Linux Audit API - domain model")
-
-	host := models.Host{
-		ID:       1,
-		Name:     "Test Server",
-		Hostname: "ubuntu-test",
-		OS:       "Ubuntu Linux",
+	if err := godotenv.Load(); err != nil {
+		log.Println(".env not found, using system environment variables")
 	}
 
-	if err := host.Validate(); err != nil {
-		log.Fatal(err)
-	}
+	ctx := context.Background()
 
-	policy := models.SecurityPolicy{
-		ID:   1,
-		Name: "Default Linux Policy",
-	}
-
-	rule := models.PolicyRule{
-		ID:       1,
-		Type:     models.RuleUserAdded,
-		Severity: models.SeverityHigh,
-		Enabled:  true,
-	}
-
-	if err := policy.AddRule(rule); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := host.AssignPolicy(policy.ID); err != nil {
-		log.Fatal(err)
-	}
-
-	audit, err := models.NewAudit(host.ID)
+	db, err := database.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to connect to database: ", err)
+	}
+	defer db.Close()
+
+	// работа хост API
+	hostRepo := repository.NewHostRepository(db)
+	hostService := services.NewHostService(hostRepo)
+	hostHandler := handlers.NewHostHandler(hostService)
+
+	// политика безопасности API
+	policyRepo := repository.NewPolicyRepository(db)
+	policyService := services.NewPolicyService(policyRepo)
+	policyHandler := handlers.NewPolicyHandler(policyService)
+
+	router := api.NewRouter(hostHandler, policyHandler)
+
+	server := &http.Server{
+		Addr:              "127.0.0.1:8080",
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
-	audit.LinuxUsers = []models.LinuxUser{
-		{
-			Username: "root",
-			UID:      0,
-			GID:      0,
-		},
-		{
-			Username: "admin",
-			UID:      1000,
-			GID:      1000,
-		},
+	stopCtx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	go func() {
+		log.Println("HTTP server started on http://127.0.0.1:8080")
+
+		if err := server.ListenAndServe(); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
+			log.Printf("HTTP server error: %v", err)
+			stop()
+		}
+	}()
+
+	<-stopCtx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("server shutdown error: %v", err)
 	}
 
-	if err := audit.Complete(); err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Host:", host.Hostname)
-	fmt.Println("Policy:", policy.Name)
-	fmt.Println("Active rules:", len(policy.ActiveRules()))
-	fmt.Println("Audit status:", audit.Status)
-	fmt.Println("Linux users:", len(audit.LinuxUsers))
-	fmt.Println("Total objects:", audit.TotalObjects())
+	log.Println("HTTP server stopped")
 }
