@@ -21,35 +21,44 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println(".env not found, using system environment variables")
+		log.Println(".env not loaded; using environment variables")
 	}
 
 	ctx := context.Background()
 
 	db, err := database.Connect(ctx)
 	if err != nil {
-		log.Fatal("failed to connect to database: ", err)
+		log.Fatal("database connection failed: ", err)
 	}
 	defer db.Close()
 
-	// работа хост API
+	// хостяра
 	hostRepo := repository.NewHostRepository(db)
 	hostService := services.NewHostService(hostRepo)
 	hostHandler := handlers.NewHostHandler(hostService)
 
-	// политика безопасности API
+	//политиика беза
 	policyRepo := repository.NewPolicyRepository(db)
 	policyService := services.NewPolicyService(policyRepo)
 	policyHandler := handlers.NewPolicyHandler(policyService)
 
-	router := api.NewRouter(hostHandler, policyHandler)
+	// Audit and Snapshot
+	auditRepo := repository.NewAuditRepository(db)
+	auditService := services.NewAuditService(auditRepo)
+	auditHandler := handlers.NewAuditHandler(auditService)
+
+	router := api.NewRouter(
+		hostHandler,
+		policyHandler,
+		auditHandler,
+	)
 
 	server := &http.Server{
 		Addr:              "127.0.0.1:8080",
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
@@ -61,11 +70,11 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Println("HTTP server started on http://127.0.0.1:8080")
+		log.Println("HTTP server listening on http://127.0.0.1:8080")
 
 		if err := server.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.Printf("HTTP server error: %v", err)
+			log.Printf("HTTP server failed: %v", err)
 			stop()
 		}
 	}()
@@ -79,7 +88,7 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("server shutdown error: %v", err)
+		log.Printf("server shutdown failed: %v", err)
 	}
 
 	log.Println("HTTP server stopped")
