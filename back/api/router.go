@@ -12,6 +12,7 @@ func NewRouter(
 	policies *handlers.PolicyHandler,
 	audits *handlers.AuditHandler,
 	baselines *handlers.BaselineHandler,
+	reports *handlers.ReportHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -51,6 +52,27 @@ func NewRouter(
 	mux.HandleFunc("PUT /api/v1/hosts/{id}/baseline", baselines.Set)
 	mux.HandleFunc("GET /api/v1/hosts/{id}/baseline", baselines.Get)
 	mux.HandleFunc("DELETE /api/v1/hosts/{id}/baseline", baselines.Clear)
+
+	// Круд запросики
+	mux.HandleFunc(
+		"GET /api/v1/reports/hosts-with-policies",
+		reports.HostsWithPolicies,
+	)
+
+	mux.HandleFunc(
+		"GET /api/v1/reports/hosts-with-baselines",
+		reports.HostsWithBaselines,
+	)
+
+	mux.HandleFunc(
+		"GET /api/v1/reports/audits-with-hosts",
+		reports.AuditsWithHosts,
+	)
+
+	mux.HandleFunc(
+		"GET /api/v1/reports/policy-rules",
+		reports.PolicyRules,
+	)
 
 	return mux
 }

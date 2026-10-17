@@ -50,11 +50,16 @@ func main() {
 	baselineService := services.NewBaselineService(baselineRepo)
 	baselineHandler := handlers.NewBaselineHandler(baselineService)
 
+	reportRepo := repository.NewReportRepository(db)
+	reportService := services.NewReportService(reportRepo)
+	reportHandler := handlers.NewReportHandler(reportService)
+
 	router := api.NewRouter(
 		hostHandler,
 		policyHandler,
 		auditHandler,
 		baselineHandler,
+		reportHandler,
 	)
 
 	server := &http.Server{
