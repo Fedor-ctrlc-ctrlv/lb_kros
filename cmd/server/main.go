@@ -12,6 +12,7 @@ import (
 
 	"web-api/back/api"
 	"web-api/back/api/handlers"
+	"web-api/back/api/middleware"
 	"web-api/back/database"
 	"web-api/back/repository"
 	"web-api/back/services"
@@ -24,6 +25,11 @@ func main() {
 		log.Println(".env not loaded; using environment variables")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET must contain at least 32 characters")
+	}
+
 	ctx := context.Background()
 
 	db, err := database.Connect(ctx)
@@ -32,27 +38,36 @@ func main() {
 	}
 	defer db.Close()
 
-	// хостяра
+	// Hosts
 	hostRepo := repository.NewHostRepository(db)
 	hostService := services.NewHostService(hostRepo)
 	hostHandler := handlers.NewHostHandler(hostService)
 
-	//политиика беза
+	// Security policies
 	policyRepo := repository.NewPolicyRepository(db)
 	policyService := services.NewPolicyService(policyRepo)
 	policyHandler := handlers.NewPolicyHandler(policyService)
 
+	// Audits
 	auditRepo := repository.NewAuditRepository(db)
 	auditService := services.NewAuditService(auditRepo)
 	auditHandler := handlers.NewAuditHandler(auditService)
 
+	// Baselines
 	baselineRepo := repository.NewBaselineRepository(db)
 	baselineService := services.NewBaselineService(baselineRepo)
 	baselineHandler := handlers.NewBaselineHandler(baselineService)
 
+	// Reports
 	reportRepo := repository.NewReportRepository(db)
 	reportService := services.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
+
+	// JWT authentication
+	authRepo := repository.NewAuthRepository(db)
+	authService := services.NewAuthService(authRepo, jwtSecret)
+	authHandler := handlers.NewAuthHandler(authService)
+	authMiddleware := middleware.NewAuthMiddleware(authService)
 
 	router := api.NewRouter(
 		hostHandler,
@@ -60,6 +75,8 @@ func main() {
 		auditHandler,
 		baselineHandler,
 		reportHandler,
+		authHandler,
+		authMiddleware,
 	)
 
 	server := &http.Server{

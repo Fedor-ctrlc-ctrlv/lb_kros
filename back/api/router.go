@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"web-api/back/api/handlers"
+	"web-api/back/api/middleware"
 	"web-api/back/api/response"
 )
 
@@ -13,6 +14,8 @@ func NewRouter(
 	audits *handlers.AuditHandler,
 	baselines *handlers.BaselineHandler,
 	reports *handlers.ReportHandler,
+	auth *handlers.AuthHandler,
+	access *middleware.AuthMiddleware,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -22,57 +25,67 @@ func NewRouter(
 		})
 	})
 
-	// хосты
-	mux.HandleFunc("POST /api/v1/hosts", hosts.Create)
+	// Authentication
+	mux.HandleFunc("POST /api/v1/auth/login", auth.Login)
+	mux.HandleFunc("GET /api/v1/auth/me",
+		access.RequireAuth(middleware.Me))
+
+	// Hosts
+	mux.HandleFunc("POST /api/v1/hosts",
+		access.RequireAdmin(hosts.Create))
 	mux.HandleFunc("GET /api/v1/hosts", hosts.List)
 	mux.HandleFunc("GET /api/v1/hosts/{id}", hosts.GetByID)
-	mux.HandleFunc("PATCH /api/v1/hosts/{id}", hosts.Update)
-	mux.HandleFunc("DELETE /api/v1/hosts/{id}", hosts.Delete)
+	mux.HandleFunc("PATCH /api/v1/hosts/{id}",
+		access.RequireAdmin(hosts.Update))
+	mux.HandleFunc("DELETE /api/v1/hosts/{id}",
+		access.RequireAdmin(hosts.Delete))
 
-	// политика
-	mux.HandleFunc("POST /api/v1/policies", policies.Create)
+	// Policies
+	mux.HandleFunc("POST /api/v1/policies",
+		access.RequireAdmin(policies.Create))
 	mux.HandleFunc("GET /api/v1/policies", policies.List)
 	mux.HandleFunc("GET /api/v1/policies/{id}", policies.GetByID)
-	mux.HandleFunc("PATCH /api/v1/policies/{id}", policies.Update)
-	mux.HandleFunc("DELETE /api/v1/policies/{id}", policies.Delete)
+	mux.HandleFunc("PATCH /api/v1/policies/{id}",
+		access.RequireAdmin(policies.Update))
+	mux.HandleFunc("DELETE /api/v1/policies/{id}",
+		access.RequireAdmin(policies.Delete))
 
-	// ручки политики беза.
-	mux.HandleFunc("POST /api/v1/policies/{id}/rules", policies.CreateRule)
-	mux.HandleFunc("PATCH /api/v1/policies/{id}/rules/{ruleID}", policies.UpdateRule)
-	mux.HandleFunc("DELETE /api/v1/policies/{id}/rules/{ruleID}", policies.DeleteRule)
+	// Policy rules
+	mux.HandleFunc("POST /api/v1/policies/{id}/rules",
+		access.RequireAdmin(policies.CreateRule))
+	mux.HandleFunc("PATCH /api/v1/policies/{id}/rules/{ruleID}",
+		access.RequireAdmin(policies.UpdateRule))
+	mux.HandleFunc("DELETE /api/v1/policies/{id}/rules/{ruleID}",
+		access.RequireAdmin(policies.DeleteRule))
 
-	// ручки снапшота
-	mux.HandleFunc("POST /api/v1/hosts/{id}/snapshots", audits.Import)
-	mux.HandleFunc("GET /api/v1/hosts/{id}/audits", audits.ListByHost)
+	// Snapshots and audits
+	mux.HandleFunc("POST /api/v1/hosts/{id}/snapshots",
+		access.RequireAdmin(audits.Import))
+	mux.HandleFunc("GET /api/v1/hosts/{id}/audits",
+		audits.ListByHost)
 	mux.HandleFunc("GET /api/v1/audits/{id}", audits.GetByID)
-	mux.HandleFunc("GET /api/v1/audits/{id}/snapshot", audits.GetSnapshot)
-	mux.HandleFunc("GET /api/v1/audits/{id}/summary", audits.GetSummary)
+	mux.HandleFunc("GET /api/v1/audits/{id}/snapshot",
+		audits.GetSnapshot)
+	mux.HandleFunc("GET /api/v1/audits/{id}/summary",
+		access.RequireAuth(audits.GetSummary))
 
-	// ручки бейзлайна
-	mux.HandleFunc("PUT /api/v1/hosts/{id}/baseline", baselines.Set)
-	mux.HandleFunc("GET /api/v1/hosts/{id}/baseline", baselines.Get)
-	mux.HandleFunc("DELETE /api/v1/hosts/{id}/baseline", baselines.Clear)
+	// Baseline
+	mux.HandleFunc("PUT /api/v1/hosts/{id}/baseline",
+		access.RequireAdmin(baselines.Set))
+	mux.HandleFunc("GET /api/v1/hosts/{id}/baseline",
+		baselines.Get)
+	mux.HandleFunc("DELETE /api/v1/hosts/{id}/baseline",
+		access.RequireAdmin(baselines.Clear))
 
-	// Круд запросики
-	mux.HandleFunc(
-		"GET /api/v1/reports/hosts-with-policies",
-		reports.HostsWithPolicies,
-	)
-
-	mux.HandleFunc(
-		"GET /api/v1/reports/hosts-with-baselines",
-		reports.HostsWithBaselines,
-	)
-
-	mux.HandleFunc(
-		"GET /api/v1/reports/audits-with-hosts",
-		reports.AuditsWithHosts,
-	)
-
-	mux.HandleFunc(
-		"GET /api/v1/reports/policy-rules",
-		reports.PolicyRules,
-	)
+	// Reports
+	mux.HandleFunc("GET /api/v1/reports/hosts-with-policies",
+		access.RequireAuth(reports.HostsWithPolicies))
+	mux.HandleFunc("GET /api/v1/reports/hosts-with-baselines",
+		access.RequireAuth(reports.HostsWithBaselines))
+	mux.HandleFunc("GET /api/v1/reports/audits-with-hosts",
+		access.RequireAuth(reports.AuditsWithHosts))
+	mux.HandleFunc("GET /api/v1/reports/policy-rules",
+		access.RequireAuth(reports.PolicyRules))
 
 	return mux
 }
