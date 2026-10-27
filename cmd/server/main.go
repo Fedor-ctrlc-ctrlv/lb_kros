@@ -8,31 +8,25 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"web-api/internal/api"
 	"web-api/internal/api/handlers"
 	"web-api/internal/api/middleware"
+	"web-api/internal/config"
 	"web-api/internal/database"
 	"web-api/internal/repository"
 	"web-api/internal/services"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println(".env not loaded; using environment variables")
-	}
-
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if len(jwtSecret) < 32 {
-		log.Fatal("JWT_SECRET must contain at least 32 characters")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("configuration error: ", err)
 	}
 
 	ctx := context.Background()
 
-	db, err := database.Connect(ctx)
+	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
 		log.Fatal("database connection failed: ", err)
 	}
@@ -65,7 +59,10 @@ func main() {
 
 	// JWT authentication
 	authRepo := repository.NewAuthRepository(db)
-	authService := services.NewAuthService(authRepo, jwtSecret)
+	authService := services.NewAuthService(
+		authRepo,
+		cfg.JWT.Secret,
+	)
 	authHandler := handlers.NewAuthHandler(authService)
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 
@@ -80,12 +77,12 @@ func main() {
 	)
 
 	server := &http.Server{
-		Addr:              "127.0.0.1:8080",
+		Addr:              cfg.HTTPAddress(),
 		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
+		ReadTimeout:       cfg.HTTP.ReadTimeout,
+		WriteTimeout:      cfg.HTTP.WriteTimeout,
+		IdleTimeout:       cfg.HTTP.IdleTimeout,
 	}
 
 	stopCtx, stop := signal.NotifyContext(
@@ -96,7 +93,10 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Println("HTTP server listening on http://127.0.0.1:8080")
+		log.Printf(
+			"HTTP server listening on http://%s",
+			cfg.HTTPAddress(),
+		)
 
 		if err := server.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
@@ -109,7 +109,7 @@ func main() {
 
 	shutdownCtx, cancel := context.WithTimeout(
 		context.Background(),
-		10*time.Second,
+		cfg.HTTP.ShutdownTimeout,
 	)
 	defer cancel()
 

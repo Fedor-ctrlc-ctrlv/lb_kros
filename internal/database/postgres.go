@@ -3,34 +3,34 @@ package database
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
+
+	"web-api/internal/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Connect(ctx context.Context) (*pgxpool.Pool, error) {
-	databaseURL := os.Getenv("DATABASE_URL")
-
-	if databaseURL == "" {
-		return nil, fmt.Errorf("DATABASE_URL is not set")
-	}
-
-	config, err := pgxpool.ParseConfig(databaseURL)
+func Connect(
+	ctx context.Context,
+	cfg config.DatabaseConfig,
+) (*pgxpool.Pool, error) {
+	poolConfig, err := pgxpool.ParseConfig(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database config: %w", err)
 	}
 
-	config.MaxConns = 10
-	config.MinConns = 1
-	config.MaxConnLifetime = time.Hour
+	poolConfig.MaxConns = cfg.MaxConns
+	poolConfig.MinConns = cfg.MinConns
+	poolConfig.MaxConnLifetime = cfg.MaxConnLifetime
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("create postgres pool: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(
+		ctx,
+		cfg.ConnectTimeout,
+	)
 	defer cancel()
 
 	if err := pool.Ping(pingCtx); err != nil {

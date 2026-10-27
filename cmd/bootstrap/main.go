@@ -8,21 +8,24 @@ import (
 	"os"
 	"strings"
 
+	"web-api/internal/config"
 	"web-api/internal/database"
 	"web-api/internal/models"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 )
 
 func main() {
-	_ = godotenv.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("configuration error: ", err)
+	}
 
 	ctx := context.Background()
 
-	db, err := database.Connect(ctx)
+	db, err := database.Connect(ctx, cfg.Database)
 	if err != nil {
 		log.Fatal("database connection failed: ", err)
 	}
