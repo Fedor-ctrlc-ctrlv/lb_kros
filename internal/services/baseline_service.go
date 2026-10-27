@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"web-api/back/repository"
+	"web-api/internal/repository"
 )
 
 var ErrInvalidBaseline = errors.New("invalid baseline data")

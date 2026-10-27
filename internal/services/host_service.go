@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"web-api/back/models"
-	"web-api/back/repository"
+	"web-api/internal/models"
+	"web-api/internal/repository"
 )
 
 var (

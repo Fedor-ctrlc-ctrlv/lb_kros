@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"web-api/back/api/response"
-	"web-api/back/services"
+	"web-api/internal/api/response"
+	"web-api/internal/services"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )

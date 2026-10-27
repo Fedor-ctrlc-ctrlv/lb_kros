@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"web-api/back/database"
-	"web-api/back/models"
+	"web-api/internal/database"
+	"web-api/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"

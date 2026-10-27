@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"web-api/back/models"
+	"web-api/internal/models"
 )
 
 var ErrInvalidSeverity = errors.New("invalid severity")

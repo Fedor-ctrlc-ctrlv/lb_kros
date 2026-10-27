@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
-	"web-api/back/api/handlers"
-	"web-api/back/api/middleware"
-	"web-api/back/api/response"
+	"web-api/internal/api/handlers"
+	"web-api/internal/api/middleware"
+	"web-api/internal/api/response"
 )
 
 func NewRouter(

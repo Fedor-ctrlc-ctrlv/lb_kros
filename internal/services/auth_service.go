@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"web-api/back/models"
-	"web-api/back/repository"
+	"web-api/internal/models"
+	"web-api/internal/repository"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"

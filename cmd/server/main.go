@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"web-api/back/api"
-	"web-api/back/api/handlers"
-	"web-api/back/api/middleware"
-	"web-api/back/database"
-	"web-api/back/repository"
-	"web-api/back/services"
+	"web-api/internal/api"
+	"web-api/internal/api/handlers"
+	"web-api/internal/api/middleware"
+	"web-api/internal/database"
+	"web-api/internal/repository"
+	"web-api/internal/services"
 
 	"github.com/joho/godotenv"
 )

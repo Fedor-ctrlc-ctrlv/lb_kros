@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"web-api/back/api/response"
-	"web-api/back/services"
+	"web-api/internal/api/response"
+	"web-api/internal/services"
 )
 
 type ReportHandler struct {

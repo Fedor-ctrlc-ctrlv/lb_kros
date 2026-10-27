@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"web-api/back/models"
+	"web-api/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

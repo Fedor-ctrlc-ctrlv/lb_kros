@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"web-api/back/api/response"
-	"web-api/back/repository"
-	"web-api/back/services"
+	"web-api/internal/api/response"
+	"web-api/internal/repository"
+	"web-api/internal/services"
 )
 
 type BaselineHandler struct {

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"web-api/back/api/response"
-	"web-api/back/models"
-	"web-api/back/services"
+	"web-api/internal/api/response"
+	"web-api/internal/models"
+	"web-api/internal/services"
 )
 
 type userContextKey struct{}
