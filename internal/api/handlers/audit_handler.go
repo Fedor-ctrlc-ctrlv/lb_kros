@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"web-api/internal/api/response"
-	"web-api/internal/repository"
+	"web-api/internal/models"
 	"web-api/internal/services"
 )
 
@@ -24,16 +24,19 @@ func writeAuditError(w http.ResponseWriter, err error) {
 		errors.Is(err, services.ErrInvalidHostID):
 		response.Error(w, http.StatusBadRequest, err.Error())
 
-	case errors.Is(err, repository.ErrSnapshotHostMismatch):
+	case errors.Is(err, models.ErrSnapshotHostMismatch):
 		response.Error(w, http.StatusConflict, err.Error())
 
-	case errors.Is(err, repository.ErrHostNotFound),
-		errors.Is(err, repository.ErrAuditNotFound):
+	case errors.Is(err, models.ErrHostNotFound),
+		errors.Is(err, models.ErrAuditNotFound):
 		response.Error(w, http.StatusNotFound, err.Error())
 
 	default:
-		response.Error(w, http.StatusInternalServerError,
-			"internal server error")
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+		)
 	}
 }
 

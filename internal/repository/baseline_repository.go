@@ -4,15 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"web-api/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var (
-	ErrBaselineNotSet    = errors.New("baseline is not set")
-	ErrAuditNotCompleted = errors.New("audit is not completed")
-	ErrAuditHostMismatch = errors.New("audit belongs to another host")
 )
 
 type BaselineRepository struct {
@@ -40,7 +35,7 @@ func (r *BaselineRepository) Set(
 	).Scan(&id)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrHostNotFound
+		return nil, models.ErrHostNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find host: %w", err)
@@ -56,17 +51,17 @@ func (r *BaselineRepository) Set(
 	`, auditID).Scan(&auditHostID, &status)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrAuditNotFound
+		return nil, models.ErrAuditNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find audit: %w", err)
 	}
 
 	if auditHostID != hostID {
-		return nil, ErrAuditHostMismatch
+		return nil, models.ErrAuditHostMismatch
 	}
 	if status != "COMPLETED" {
-		return nil, ErrAuditNotCompleted
+		return nil, models.ErrAuditNotCompleted
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -99,14 +94,14 @@ func (r *BaselineRepository) Get(
 	`, hostID).Scan(&baselineID)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrHostNotFound
+		return nil, models.ErrHostNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get host baseline: %w", err)
 	}
 
 	if baselineID == nil {
-		return nil, ErrBaselineNotSet
+		return nil, models.ErrBaselineNotSet
 	}
 
 	audit, err := scanAudit(r.db.QueryRow(ctx,
@@ -116,7 +111,7 @@ func (r *BaselineRepository) Get(
 		*baselineID, hostID,
 	))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrAuditNotFound
+		return nil, models.ErrAuditNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get baseline audit: %w", err)
@@ -140,7 +135,7 @@ func (r *BaselineRepository) Clear(
 		return fmt.Errorf("clear baseline: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrHostNotFound
+		return models.ErrHostNotFound
 	}
 
 	return nil

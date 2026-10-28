@@ -11,8 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrHostNotFound = errors.New("host not found")
-
 type HostRepository struct {
 	db *pgxpool.Pool
 }
@@ -57,9 +55,9 @@ func (r *HostRepository) Create(
 	query := `
 		INSERT INTO hosts (
 			name, hostname, description, os,
-			architecture, kernel
+			architecture, kernel, policy_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING ` + hostColumns
 
 	row := r.db.QueryRow(
@@ -70,6 +68,7 @@ func (r *HostRepository) Create(
 		host.OS,
 		host.Architecture,
 		host.Kernel,
+		host.PolicyID,
 	)
 
 	result, err := scanHost(row)
@@ -92,7 +91,7 @@ func (r *HostRepository) GetByID(
 
 	host, err := scanHost(r.db.QueryRow(ctx, query, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrHostNotFound
+		return nil, models.ErrHostNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get host: %w", err)
@@ -146,6 +145,7 @@ func (r *HostRepository) Update(
 			os = $5,
 			architecture = $6,
 			kernel = $7,
+			policy_id = $8,
 			updated_at = NOW()
 		WHERE id = $1
 		RETURNING ` + hostColumns
@@ -159,11 +159,12 @@ func (r *HostRepository) Update(
 		host.OS,
 		host.Architecture,
 		host.Kernel,
+		host.PolicyID,
 	)
 
 	result, err := scanHost(row)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrHostNotFound
+		return nil, models.ErrHostNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("update host: %w", err)
@@ -186,7 +187,7 @@ func (r *HostRepository) Delete(
 	}
 
 	if tag.RowsAffected() == 0 {
-		return ErrHostNotFound
+		return models.ErrHostNotFound
 	}
 
 	return nil

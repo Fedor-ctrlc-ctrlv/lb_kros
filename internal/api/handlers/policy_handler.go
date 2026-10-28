@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"web-api/internal/api/response"
+	"web-api/internal/models"
 	"web-api/internal/services"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -35,8 +36,8 @@ func writePolicyError(w http.ResponseWriter, err error) {
 		errors.Is(err, services.ErrInvalidRule):
 		response.Error(w, http.StatusBadRequest, err.Error())
 
-	case errors.Is(err, services.ErrPolicyNotFound),
-		errors.Is(err, services.ErrRuleNotFound):
+	case errors.Is(err, models.ErrPolicyNotFound),
+		errors.Is(err, models.ErrRuleNotFound):
 		response.Error(w, http.StatusNotFound, err.Error())
 
 	case errors.As(err, &pgErr) && pgErr.Code == "23505":

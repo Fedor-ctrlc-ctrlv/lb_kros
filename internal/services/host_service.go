@@ -1,17 +1,19 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 
 	"web-api/internal/models"
-	"web-api/internal/repository"
 )
 
 var (
-	ErrInvalidHost   = errors.New("invalid host data")
-	ErrInvalidHostID = errors.New("invalid host id")
+	ErrInvalidHost     = errors.New("invalid host data")
+	ErrInvalidHostID   = errors.New("invalid host id")
+	ErrInvalidPolicyID = errors.New("invalid policy id")
 )
 
 type HostStore interface {
@@ -37,15 +39,17 @@ type CreateHostInput struct {
 	OS           string `json:"os"`
 	Architecture string `json:"architecture"`
 	Kernel       string `json:"kernel"`
+	PolicyID     *int64 `json:"policy_id"`
 }
 
 type UpdateHostInput struct {
-	Name         *string `json:"name"`
-	Hostname     *string `json:"hostname"`
-	Description  *string `json:"description"`
-	OS           *string `json:"os"`
-	Architecture *string `json:"architecture"`
-	Kernel       *string `json:"kernel"`
+	Name         *string         `json:"name"`
+	Hostname     *string         `json:"hostname"`
+	Description  *string         `json:"description"`
+	OS           *string         `json:"os"`
+	Architecture *string         `json:"architecture"`
+	Kernel       *string         `json:"kernel"`
+	PolicyID     json.RawMessage `json:"policy_id"`
 }
 
 func (s *HostService) Create(
@@ -61,8 +65,14 @@ func (s *HostService) Create(
 		Kernel:       strings.TrimSpace(input.Kernel),
 	}
 
-	if host.Name == "" || host.Hostname == "" {
+	if err := host.Validate(); err != nil {
 		return nil, ErrInvalidHost
+	}
+
+	if input.PolicyID != nil {
+		if err := host.AssignPolicy(*input.PolicyID); err != nil {
+			return nil, ErrInvalidPolicyID
+		}
 	}
 
 	return s.repo.Create(ctx, host)
@@ -75,6 +85,7 @@ func (s *HostService) GetByID(
 	if id <= 0 {
 		return nil, ErrInvalidHostID
 	}
+
 	return s.repo.GetByID(ctx, id)
 }
 
@@ -117,7 +128,26 @@ func (s *HostService) Update(
 		host.Kernel = strings.TrimSpace(*input.Kernel)
 	}
 
-	if host.Name == "" || host.Hostname == "" {
+	if input.PolicyID != nil {
+		if bytes.Equal(
+			bytes.TrimSpace(input.PolicyID),
+			[]byte("null"),
+		) {
+			host.RemovePolicy()
+		} else {
+			var policyID int64
+
+			if err := json.Unmarshal(input.PolicyID, &policyID); err != nil {
+				return nil, ErrInvalidPolicyID
+			}
+
+			if err := host.AssignPolicy(policyID); err != nil {
+				return nil, ErrInvalidPolicyID
+			}
+		}
+	}
+
+	if err := host.Validate(); err != nil {
 		return nil, ErrInvalidHost
 	}
 
@@ -134,6 +164,3 @@ func (s *HostService) Delete(
 
 	return s.repo.Delete(ctx, id)
 }
-
-// Используется обработчиком для определения ошибки 404.
-var ErrHostNotFound = repository.ErrHostNotFound

@@ -11,11 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var (
-	ErrPolicyNotFound = errors.New("policy not found")
-	ErrRuleNotFound   = errors.New("rule not found")
-)
-
 type PolicyRepository struct {
 	db *pgxpool.Pool
 }
@@ -92,7 +87,7 @@ func (r *PolicyRepository) GetByID(
 
 	policy, err := scanPolicy(r.db.QueryRow(ctx, query, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrPolicyNotFound
+		return nil, models.ErrPolicyNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get policy: %w", err)
@@ -153,7 +148,7 @@ func (r *PolicyRepository) Update(
 		ctx, query, policy.ID, policy.Name, policy.Description,
 	))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrPolicyNotFound
+		return nil, models.ErrPolicyNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("update policy: %w", err)
@@ -176,7 +171,7 @@ func (r *PolicyRepository) Delete(
 		return fmt.Errorf("delete policy: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrPolicyNotFound
+		return models.ErrPolicyNotFound
 	}
 	return nil
 }
@@ -254,7 +249,7 @@ func (r *PolicyRepository) GetRule(
 		r.db.QueryRow(ctx, query, policyID, ruleID),
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrRuleNotFound
+		return nil, models.ErrRuleNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get rule: %w", err)
@@ -287,7 +282,7 @@ func (r *PolicyRepository) UpdateRule(
 		rule.Parameters,
 	))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrRuleNotFound
+		return nil, models.ErrRuleNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("update rule: %w", err)
@@ -308,7 +303,7 @@ func (r *PolicyRepository) DeleteRule(
 		return fmt.Errorf("delete rule: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrRuleNotFound
+		return models.ErrRuleNotFound
 	}
 	return nil
 }

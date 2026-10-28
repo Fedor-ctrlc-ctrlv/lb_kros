@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"web-api/internal/api/response"
-	"web-api/internal/repository"
+	"web-api/internal/models"
 	"web-api/internal/services"
 )
 
@@ -24,18 +24,21 @@ func writeBaselineError(w http.ResponseWriter, err error) {
 	case errors.Is(err, services.ErrInvalidBaseline):
 		response.Error(w, http.StatusBadRequest, err.Error())
 
-	case errors.Is(err, repository.ErrHostNotFound),
-		errors.Is(err, repository.ErrAuditNotFound),
-		errors.Is(err, repository.ErrBaselineNotSet):
+	case errors.Is(err, models.ErrHostNotFound),
+		errors.Is(err, models.ErrAuditNotFound),
+		errors.Is(err, models.ErrBaselineNotSet):
 		response.Error(w, http.StatusNotFound, err.Error())
 
-	case errors.Is(err, repository.ErrAuditHostMismatch),
-		errors.Is(err, repository.ErrAuditNotCompleted):
+	case errors.Is(err, models.ErrAuditHostMismatch),
+		errors.Is(err, models.ErrAuditNotCompleted):
 		response.Error(w, http.StatusConflict, err.Error())
 
 	default:
-		response.Error(w, http.StatusInternalServerError,
-			"internal server error")
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+		)
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"web-api/internal/models"
-	"web-api/internal/repository"
 )
 
 var ErrInvalidPolicy = errors.New("invalid policy data")
@@ -242,8 +241,3 @@ func (s *PolicyService) DeleteRule(
 	}
 	return s.repo.DeleteRule(ctx, policyID, ruleID)
 }
-
-var (
-	ErrPolicyNotFound = repository.ErrPolicyNotFound
-	ErrRuleNotFound   = repository.ErrRuleNotFound
-)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"web-api/internal/api/response"
+	"web-api/internal/models"
 	"web-api/internal/services"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -54,14 +55,18 @@ func writeHostError(w http.ResponseWriter, err error) {
 
 	switch {
 	case errors.Is(err, services.ErrInvalidHost),
-		errors.Is(err, services.ErrInvalidHostID):
+		errors.Is(err, services.ErrInvalidHostID),
+		errors.Is(err, services.ErrInvalidPolicyID):
 		response.Error(w, http.StatusBadRequest, err.Error())
 
-	case errors.Is(err, services.ErrHostNotFound):
+	case errors.Is(err, models.ErrHostNotFound):
 		response.Error(w, http.StatusNotFound, "host not found")
 
 	case errors.As(err, &pgErr) && pgErr.Code == "23505":
 		response.Error(w, http.StatusConflict, "host name already exists")
+
+	case errors.As(err, &pgErr) && pgErr.Code == "23503":
+		response.Error(w, http.StatusBadRequest, "referenced policy does not exist")
 
 	default:
 		response.Error(w, http.StatusInternalServerError, "internal server error")

@@ -13,8 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrAuditNotFound = errors.New("audit not found")
-
 type AuditRepository struct {
 	db *pgxpool.Pool
 }
@@ -76,13 +74,13 @@ func (r *AuditRepository) Import(
 		hostID,
 	).Scan(&hostname)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrHostNotFound
+		return nil, models.ErrHostNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find host: %w", err)
 	}
 	if hostname != snapshot.System.Hostname {
-		return nil, ErrSnapshotHostMismatch
+		return nil, models.ErrSnapshotHostMismatch
 	}
 
 	var audit AuditRecord
@@ -126,10 +124,6 @@ func (r *AuditRepository) Import(
 
 	return &audit, nil
 }
-
-var ErrSnapshotHostMismatch = errors.New(
-	"snapshot hostname does not match host",
-)
 
 func copyFiles(
 	ctx context.Context, tx pgx.Tx, auditID int64,
@@ -255,7 +249,7 @@ func (r *AuditRepository) GetByID(
 		id,
 	))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrAuditNotFound
+		return nil, models.ErrAuditNotFound
 	}
 	return audit, err
 }
@@ -293,7 +287,7 @@ func (r *AuditRepository) GetSnapshot(
 		id,
 	).Scan(&raw)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrAuditNotFound
+		return nil, models.ErrAuditNotFound
 	}
 	return raw, err
 }
