@@ -1,11 +1,9 @@
 {
   "info": {
-    "_postman_id": "d0d68db4-09c8-473d-a3d5-83d5e6a40695",
-    "name": "API Check",
-    "description": "Requests based on back/api/router.go. Run login first. Replace placeholder passwords locally; do not export credentials or tokens. Bodies for host/policy/rule are examples and must be checked against handler DTOs. Snapshot import requires real collector v2 JSON. Destructive requests are labeled run last. No user creation route exists.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "59069276",
-    "_collection_link": "https://go.postman.co/collection/59069276-d0d68db4-09c8-473d-a3d5-83d5e6a40695?source=collection_link"
+    "_postman_id": "d24eb4f1-095b-4de8-8048-6dc663bf9f82",
+    "name": "Linux Security Audit API - Updated",
+    "description": "Updated for current internal/api router and service DTOs. Run Admin Login first; set credentials locally. Create policy before assigning policy_id to a host. Host policy_id is optional on POST and supports integer/null on PATCH. Rule JSON field is type (not rule_type). Snapshot import needs real collector v2 JSON. Destructive requests run last. Tokens are not embedded.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
@@ -13,6 +11,15 @@
       "item": [
         {
           "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/health",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -23,24 +30,7 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/health",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "health"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     },
@@ -49,6 +39,29 @@
       "item": [
         {
           "name": "Login Admin (save token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"REPLACE_WITH_ADMIN_PASSWORD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -62,11 +75,11 @@
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Login User (save token)",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "POST",
             "header": [
               {
@@ -74,32 +87,21 @@
                 "value": "application/json"
               }
             ],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"REPLACE_WITH_ADMIN_PASSWORD\"\n}",
+              "raw": "{\n  \"username\": \"student\",\n  \"password\": \"REPLACE_WITH_USER_PASSWORD\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Login User (save token)",
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -113,44 +115,26 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"student\",\n  \"password\": \"REPLACE_WITH_USER_PASSWORD\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "Current User - Admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/auth/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -161,37 +145,19 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "Current User - No Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/auth/me",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -202,27 +168,7 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     },
@@ -231,6 +177,37 @@
       "item": [
         {
           "name": "Create Host - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/hosts",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"lab-host\",\n  \"hostname\": \"lab-host.local\",\n  \"description\": \"Postman laboratory host\",\n  \"os\": \"Ubuntu 24.04\",\n  \"kernel\": \"6.8.0\",\n  \"architecture\": \"x86_64\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create host without a policy. Optional policy_id may be supplied as a positive integer if an existing policy is known. Response id is saved to {{host_id}}."
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -244,18 +221,11 @@
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "400 - Invalid Host - Admin",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -263,32 +233,7 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"lab-host\",\n  \"hostname\": \"lab-host.local\",\n  \"description\": \"Postman laboratory host\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Hosts",
-          "request": {
+            "url": "{{base_url}}/api/v1/hosts",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -299,17 +244,44 @@
                 }
               ]
             },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"hostname\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Host validation rejects empty name/hostname; expect 400."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Hosts",
+          "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts"
+            "url": "{{base_url}}/api/v1/hosts",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
               ]
             }
           },
@@ -318,6 +290,9 @@
         {
           "name": "Get Host",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -326,20 +301,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}"
               ]
             }
           },
@@ -348,16 +309,6 @@
         {
           "name": "Update Host - Admin",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PATCH",
             "header": [
               {
@@ -365,33 +316,7 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated via Postman\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Host - Admin (run last)",
-          "request": {
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -402,18 +327,101 @@
                 }
               ]
             },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated via Postman\",\n  \"os\": \"Ubuntu 24.04\",\n  \"architecture\": \"x86_64\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "PATCH accepts partial fields: name, hostname, description, os, kernel, architecture, policy_id. Omitted fields remain unchanged."
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Policy to Host - Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policy_id\": {{policy_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Assign existing policy to existing host. Run Create Policy and Create Host first. The variable is inserted as a JSON number."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Policy from Host - Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policy_id\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Clear policy assignment. Omitted policy_id would leave it unchanged."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Host - Admin (run last)",
+          "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}"
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
               ]
             }
           },
@@ -426,6 +434,36 @@
       "item": [
         {
           "name": "Create Policy - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/policies",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lab Policy\",\n  \"description\": \"Laboratory policy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -439,51 +477,14 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Lab Policy\",\n  \"description\": \"Laboratory policy\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Policies",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/policies",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -492,19 +493,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies"
               ]
             }
           },
@@ -513,6 +501,9 @@
         {
           "name": "Get Policy",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -521,20 +512,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}"
               ]
             }
           },
@@ -543,6 +520,14 @@
         {
           "name": "Update Policy - Admin",
           "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -553,13 +538,6 @@
                 }
               ]
             },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"description\": \"Updated via Postman\"\n}",
@@ -568,24 +546,43 @@
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}"
-              ]
             }
           },
           "response": []
         },
         {
           "name": "Create Rule - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}/rules",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"WORLD_WRITABLE_FILE\",\n  \"enabled\": true,\n  \"severity\": \"HIGH\",\n  \"parameters\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Rule DTO expects type, severity, enabled (optional; defaults true), parameters (optional; defaults {}). Allowed severity: LOW, MEDIUM, HIGH, CRITICAL. Duplicate rule type for one policy may be rejected."
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -599,18 +596,11 @@
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "400 - Invalid Rule Severity - Admin",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -618,34 +608,7 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"rule_type\": \"WORLD_WRITABLE_FILE\",\n  \"enabled\": true,\n  \"severity\": \"HIGH\",\n  \"parameters\": {}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}/rules",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}",
-                "rules"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Rule - Admin",
-          "request": {
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}/rules",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -656,6 +619,33 @@
                 }
               ]
             },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"USER_ADDED\",\n  \"severity\": \"INFO\",\n  \"parameters\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "INFO is not accepted by the current rule validator; expect 400."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Rule - Admin",
+          "request": {
             "method": "PATCH",
             "header": [
               {
@@ -663,6 +653,17 @@
                 "value": "application/json"
               }
             ],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}/rules/{{rule_id}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"enabled\": false\n}",
@@ -671,20 +672,6 @@
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}/rules/{{rule_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}",
-                "rules",
-                "{{rule_id}}"
-              ]
             }
           },
           "response": []
@@ -692,6 +679,9 @@
         {
           "name": "Delete Rule - Admin (run last)",
           "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}/rules/{{rule_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -700,22 +690,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}/rules/{{rule_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}",
-                "rules",
-                "{{rule_id}}"
               ]
             }
           },
@@ -724,6 +698,9 @@
         {
           "name": "Delete Policy - Admin (run last)",
           "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/policies/{{policy_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -732,20 +709,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/policies/{{policy_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "policies",
-                "{{policy_id}}"
               ]
             }
           },
@@ -759,6 +722,14 @@
         {
           "name": "Import Snapshot - Admin (replace sample body)",
           "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}/snapshots",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -769,13 +740,6 @@
                 }
               ]
             },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"_note\": \"Replace entire body with real collector v2 JSON before sending\"\n}",
@@ -784,19 +748,6 @@
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}/snapshots",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}",
-                "snapshots"
-              ]
             }
           },
           "response": []
@@ -804,6 +755,9 @@
         {
           "name": "List Audits by Host",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}/audits",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -812,21 +766,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}/audits",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}",
-                "audits"
               ]
             }
           },
@@ -835,6 +774,9 @@
         {
           "name": "Get Audit",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/audits/{{audit_id}}",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -843,20 +785,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/audits/{{audit_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "audits",
-                "{{audit_id}}"
               ]
             }
           },
@@ -865,6 +793,9 @@
         {
           "name": "Get Audit Snapshot",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/audits/{{audit_id}}/snapshot",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -873,21 +804,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/audits/{{audit_id}}/snapshot",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "audits",
-                "{{audit_id}}",
-                "snapshot"
               ]
             }
           },
@@ -896,6 +812,9 @@
         {
           "name": "Audit Summary - Admin",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/audits/{{audit_id}}/summary",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -904,21 +823,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/audits/{{audit_id}}/summary",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "audits",
-                "{{audit_id}}",
-                "summary"
               ]
             }
           },
@@ -932,16 +836,6 @@
         {
           "name": "Set Baseline - Admin",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{admin_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PUT",
             "header": [
               {
@@ -949,34 +843,7 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"audit_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}",
-                "baseline"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Baseline",
-          "request": {
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -987,19 +854,33 @@
                 }
               ]
             },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audit_id\": {{audit_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Use an existing completed audit for this host. {{audit_id}} is substituted as a JSON number."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Baseline",
+          "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}",
-                "baseline"
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
               ]
             }
           },
@@ -1008,6 +889,9 @@
         {
           "name": "Clear Baseline - Admin",
           "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1016,21 +900,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts/{{host_id}}/baseline",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts",
-                "{{host_id}}",
-                "baseline"
               ]
             }
           },
@@ -1044,6 +913,9 @@
         {
           "name": "Hosts With Policies",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/hosts-with-policies",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1052,20 +924,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/hosts-with-policies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "hosts-with-policies"
               ]
             }
           },
@@ -1074,6 +932,9 @@
         {
           "name": "Hosts With Baselines",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/hosts-with-baselines",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1082,20 +943,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/hosts-with-baselines",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "hosts-with-baselines"
               ]
             }
           },
@@ -1104,6 +951,9 @@
         {
           "name": "Audits With Hosts",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/audits-with-hosts",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1112,20 +962,6 @@
                   "value": "{{admin_token}}",
                   "type": "string"
                 }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/audits-with-hosts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "audits-with-hosts"
               ]
             }
           },
@@ -1134,6 +970,9 @@
         {
           "name": "Policy Rules - HIGH",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/policy-rules?severity=HIGH",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1141,26 +980,6 @@
                   "key": "token",
                   "value": "{{admin_token}}",
                   "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/policy-rules?severity=HIGH",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "policy-rules"
-              ],
-              "query": [
-                {
-                  "key": "severity",
-                  "value": "HIGH"
                 }
               ]
             }
@@ -1174,6 +993,15 @@
       "item": [
         {
           "name": "401 - Report Without Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/hosts-with-policies",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1184,45 +1012,11 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/hosts-with-policies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "hosts-with-policies"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "401 - Create Host Without Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
-                ]
-              }
-            }
-          ],
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "POST",
             "header": [
               {
@@ -1230,6 +1024,10 @@
                 "value": "application/json"
               }
             ],
+            "url": "{{base_url}}/api/v1/hosts",
+            "auth": {
+              "type": "noauth"
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"should-not-create\",\n  \"hostname\": \"should-not-create.local\"\n}",
@@ -1238,23 +1036,53 @@
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts"
-              ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "403 - User Cannot Create Host",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/hosts",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"should-not-create\",\n  \"hostname\": \"should-not-create.local\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1265,8 +1093,14 @@
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "200 - User Can Read Report",
           "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/v1/reports/hosts-with-policies",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1276,39 +1110,9 @@
                   "type": "string"
                 }
               ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"should-not-create\",\n  \"hostname\": \"should-not-create.local\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/hosts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "hosts"
-              ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "200 - User Can Read Report",
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1319,34 +1123,7 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{user_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reports/hosts-with-policies",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "reports",
-                "hosts-with-policies"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     }
@@ -1354,31 +1131,38 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8080"
+      "value": "http://localhost:8080",
+      "type": "string"
     },
     {
       "key": "admin_token",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "user_token",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "host_id",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     },
     {
       "key": "policy_id",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     },
     {
       "key": "rule_id",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     },
     {
       "key": "audit_id",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     }
   ]
 }
