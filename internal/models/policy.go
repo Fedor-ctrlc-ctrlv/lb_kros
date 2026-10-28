@@ -139,13 +139,20 @@ func (p SecurityPolicy) ActiveRules() []PolicyRule {
 }
 
 func (r PolicyRule) Validate() error {
-	if r.Type == "" {
-		return errors.New("rule type cannot be empty")
+	switch string(r.Type) {
+	case "USER_ADDED", "USER_REMOVED",
+		"UNAUTHORIZED_UID_ZERO", "USER_ADDED_TO_SUDO",
+		"SUID_ADDED", "SGID_ADDED",
+		"CRITICAL_FILE_CHANGED", "WORLD_WRITABLE_FILE",
+		"LISTENING_PORT_ADDED", "UNAUTHORIZED_PORT",
+		"SERVICE_ADDED", "SERVICE_REMOVED",
+		"CRON_JOB_ADDED", "SSH_KEY_ADDED", "SSH_KEY_REMOVED":
+	default:
+		return errors.New("invalid rule type")
 	}
 
 	switch r.Severity {
-	case SeverityInfo,
-		SeverityLow,
+	case SeverityLow,
 		SeverityMedium,
 		SeverityHigh,
 		SeverityCritical:
@@ -153,9 +160,14 @@ func (r PolicyRule) Validate() error {
 		return errors.New("invalid rule severity")
 	}
 
-	if len(r.Parameters) > 0 &&
-		!json.Valid(r.Parameters) {
+	var parameters map[string]json.RawMessage
+
+	if err := json.Unmarshal(r.Parameters, &parameters); err != nil {
 		return errors.New("invalid rule parameters")
+	}
+
+	if parameters == nil {
+		return errors.New("rule parameters must be a JSON object")
 	}
 
 	return nil

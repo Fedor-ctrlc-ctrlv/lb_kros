@@ -70,6 +70,15 @@ func main() {
 		log.Fatal("username must contain 3-50 characters")
 	}
 
+	admin := models.User{
+		Username: username,
+		Role:     models.RoleAdmin,
+	}
+
+	if err := admin.Validate(); err != nil {
+		log.Fatal("invalid admin user: ", err)
+	}
+
 	fmt.Print("Admin password: ")
 
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -99,7 +108,7 @@ func main() {
 		)
 		VALUES ($1, $2, $3)
 		RETURNING id
-	`, username, string(hash), models.RoleAdmin).Scan(&id)
+	`, admin.Username, string(hash), admin.Role).Scan(&id)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Fatal("failed to create admin")

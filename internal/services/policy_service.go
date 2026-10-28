@@ -9,8 +9,10 @@ import (
 	"web-api/internal/models"
 )
 
-var ErrInvalidPolicy = errors.New("invalid policy data")
-var ErrInvalidRule = errors.New("invalid policy rule")
+var (
+	ErrInvalidPolicy = errors.New("invalid policy data")
+	ErrInvalidRule   = errors.New("invalid policy rule")
+)
 
 type PolicyStore interface {
 	Create(context.Context, *models.SecurityPolicy) (*models.SecurityPolicy, error)
@@ -18,6 +20,7 @@ type PolicyStore interface {
 	List(context.Context) ([]models.SecurityPolicy, error)
 	Update(context.Context, *models.SecurityPolicy) (*models.SecurityPolicy, error)
 	Delete(context.Context, int64) error
+
 	CreateRule(context.Context, *models.PolicyRule) (*models.PolicyRule, error)
 	GetRule(context.Context, int64, int64) (*models.PolicyRule, error)
 	UpdateRule(context.Context, *models.PolicyRule) (*models.PolicyRule, error)
@@ -56,43 +59,6 @@ type UpdateRuleInput struct {
 	Parameters json.RawMessage  `json:"parameters"`
 }
 
-func validSeverity(s models.Severity) bool {
-	switch string(s) {
-	case "LOW", "MEDIUM", "HIGH", "CRITICAL":
-		return true
-	default:
-		return false
-	}
-}
-
-func validRuleType(t models.RuleType) bool {
-	switch string(t) {
-	case "USER_ADDED", "USER_REMOVED",
-		"UNAUTHORIZED_UID_ZERO", "USER_ADDED_TO_SUDO",
-		"SUID_ADDED", "SGID_ADDED",
-		"CRITICAL_FILE_CHANGED", "WORLD_WRITABLE_FILE",
-		"LISTENING_PORT_ADDED", "UNAUTHORIZED_PORT",
-		"SERVICE_ADDED", "SERVICE_REMOVED",
-		"CRON_JOB_ADDED", "SSH_KEY_ADDED", "SSH_KEY_REMOVED":
-		return true
-	default:
-		return false
-	}
-}
-
-func validParameters(raw json.RawMessage) bool {
-	if len(raw) == 0 {
-		return false
-	}
-
-	var obj map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &obj); err != nil {
-		return false
-	}
-
-	return obj != nil
-}
-
 func (s *PolicyService) Create(
 	ctx context.Context,
 	input CreatePolicyInput,
@@ -101,9 +67,11 @@ func (s *PolicyService) Create(
 		Name:        strings.TrimSpace(input.Name),
 		Description: strings.TrimSpace(input.Description),
 	}
-	if policy.Name == "" {
+
+	if err := policy.Validate(); err != nil {
 		return nil, ErrInvalidPolicy
 	}
+
 	return s.repo.Create(ctx, policy)
 }
 
@@ -114,6 +82,7 @@ func (s *PolicyService) GetByID(
 	if id <= 0 {
 		return nil, ErrInvalidPolicy
 	}
+
 	return s.repo.GetByID(ctx, id)
 }
 
@@ -140,20 +109,26 @@ func (s *PolicyService) Update(
 	if input.Name != nil {
 		policy.Name = strings.TrimSpace(*input.Name)
 	}
+
 	if input.Description != nil {
 		policy.Description = strings.TrimSpace(*input.Description)
 	}
-	if policy.Name == "" {
+
+	if err := policy.Validate(); err != nil {
 		return nil, ErrInvalidPolicy
 	}
 
 	return s.repo.Update(ctx, policy)
 }
 
-func (s *PolicyService) Delete(ctx context.Context, id int64) error {
+func (s *PolicyService) Delete(
+	ctx context.Context,
+	id int64,
+) error {
 	if id <= 0 {
 		return ErrInvalidPolicy
 	}
+
 	return s.repo.Delete(ctx, id)
 }
 
@@ -162,9 +137,7 @@ func (s *PolicyService) CreateRule(
 	policyID int64,
 	input CreateRuleInput,
 ) (*models.PolicyRule, error) {
-	if policyID <= 0 ||
-		!validRuleType(input.Type) ||
-		!validSeverity(input.Severity) {
+	if policyID <= 0 {
 		return nil, ErrInvalidRule
 	}
 
@@ -172,17 +145,10 @@ func (s *PolicyService) CreateRule(
 	if len(parameters) == 0 {
 		parameters = json.RawMessage(`{}`)
 	}
-	if !validParameters(parameters) {
-		return nil, ErrInvalidRule
-	}
 
 	enabled := true
 	if input.Enabled != nil {
 		enabled = *input.Enabled
-	}
-
-	if _, err := s.repo.GetByID(ctx, policyID); err != nil {
-		return nil, err
 	}
 
 	rule := &models.PolicyRule{
@@ -191,6 +157,14 @@ func (s *PolicyService) CreateRule(
 		Severity:   input.Severity,
 		Enabled:    enabled,
 		Parameters: parameters,
+	}
+
+	if err := rule.Validate(); err != nil {
+		return nil, ErrInvalidRule
+	}
+
+	if _, err := s.repo.GetByID(ctx, policyID); err != nil {
+		return nil, err
 	}
 
 	return s.repo.CreateRule(ctx, rule)
@@ -213,19 +187,20 @@ func (s *PolicyService) UpdateRule(
 	if input.Type != nil {
 		rule.Type = *input.Type
 	}
+
 	if input.Severity != nil {
 		rule.Severity = *input.Severity
 	}
+
 	if input.Enabled != nil {
 		rule.Enabled = *input.Enabled
 	}
+
 	if input.Parameters != nil {
 		rule.Parameters = input.Parameters
 	}
 
-	if !validRuleType(rule.Type) ||
-		!validSeverity(rule.Severity) ||
-		!validParameters(rule.Parameters) {
+	if err := rule.Validate(); err != nil {
 		return nil, ErrInvalidRule
 	}
 
@@ -239,5 +214,6 @@ func (s *PolicyService) DeleteRule(
 	if policyID <= 0 || ruleID <= 0 {
 		return ErrInvalidRule
 	}
+
 	return s.repo.DeleteRule(ctx, policyID, ruleID)
 }
