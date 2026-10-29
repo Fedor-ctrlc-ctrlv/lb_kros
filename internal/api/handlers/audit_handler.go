@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"web-api/internal/api/response"
 	"web-api/internal/models"
@@ -74,6 +75,7 @@ func (h *AuditHandler) Import(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, result)
 }
 
+/*
 func (h *AuditHandler) ListByHost(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -84,6 +86,70 @@ func (h *AuditHandler) ListByHost(
 	}
 
 	result, err := h.service.ListByHost(r.Context(), hostID)
+	if err != nil {
+		writeAuditError(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, result)
+}*/
+
+func (h *AuditHandler) ListByHost(
+	w http.ResponseWriter, r *http.Request,
+) {
+	hostID, err := parseID(r, "id")
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid host id")
+		return
+	}
+
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+
+	// Если даты не переданы — возвращаем все аудиты хоста.
+	if fromStr == "" && toStr == "" {
+		result, err := h.service.ListByHost(r.Context(), hostID)
+		if err != nil {
+			writeAuditError(w, err)
+			return
+		}
+
+		response.JSON(w, http.StatusOK, result)
+		return
+	}
+
+	if fromStr == "" || toStr == "" {
+		response.Error(w, http.StatusBadRequest,
+			"both from and to are required")
+		return
+	}
+
+	from, err := time.Parse(time.RFC3339, fromStr)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest,
+			"invalid from date")
+		return
+	}
+
+	to, err := time.Parse(time.RFC3339, toStr)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest,
+			"invalid to date")
+		return
+	}
+
+	if !from.Before(to) {
+		response.Error(w, http.StatusBadRequest,
+			"from must be before to")
+		return
+	}
+
+	result, err := h.service.ListByHostPeriod(
+		r.Context(),
+		hostID,
+		from,
+		to,
+	)
 	if err != nil {
 		writeAuditError(w, err)
 		return

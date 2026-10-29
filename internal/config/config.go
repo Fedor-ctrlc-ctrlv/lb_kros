@@ -40,8 +40,6 @@ type JWTConfig struct {
 }
 
 func Load() (*Config, error) {
-	// Настоящие переменные окружения имеют приоритет
-	// над значениями из .env.
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("load .env: %w", err)
 	}

@@ -150,3 +150,19 @@ func (s *AuditService) GetSummary(
 	}
 	return s.repo.GetSummary(ctx, id)
 }
+
+func (s *AuditService) ListByHostPeriod(
+	ctx context.Context,
+	hostID int64,
+	from, to time.Time,
+) ([]repository.AuditRecord, error) {
+	if hostID <= 0 {
+		return nil, ErrInvalidHostID
+	}
+
+	if from.IsZero() || to.IsZero() || !from.Before(to) {
+		return nil, fmt.Errorf("invalid time range")
+	}
+
+	return s.repo.ListByHostPeriod(ctx, hostID, from, to)
+}

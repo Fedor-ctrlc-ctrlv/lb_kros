@@ -317,3 +317,36 @@ func (r *AuditRepository) GetSummary(
 	s.AuditID = id
 	return &s, nil
 }
+
+func (r *AuditRepository) ListByHostPeriod(
+	ctx context.Context,
+	hostID int64,
+	from, to time.Time,
+) ([]AuditRecord, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT `+auditColumns+`
+		 FROM audits
+		 WHERE host_id = $1
+		   AND started_at >= $2
+		   AND started_at < $3
+		 ORDER BY started_at ASC, id ASC`,
+		hostID, from, to,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]AuditRecord, 0)
+
+	for rows.Next() {
+		audit, err := scanAudit(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, *audit)
+	}
+
+	return result, rows.Err()
+}
