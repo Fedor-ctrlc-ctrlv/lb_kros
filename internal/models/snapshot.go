@@ -15,6 +15,8 @@ type Snapshot struct {
 	Services   []SnapshotService `json:"services"`
 	CronJobs   []SnapshotCron    `json:"cron_jobs"`
 	ScanErrors json.RawMessage   `json:"scan_errors"`
+	Errors     []string          `json:"errors,omitempty"`
+	Security   *SnapshotSecurity `json:"security,omitempty"`
 }
 
 type SnapshotSystem struct {

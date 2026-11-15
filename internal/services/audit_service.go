@@ -40,6 +40,7 @@ func (s *AuditService) Import(
 	if err := decoder.Decode(&snapshot); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidSnapshot, err)
 	}
+
 	var extra any
 	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 		return nil, ErrInvalidSnapshot
@@ -53,11 +54,15 @@ func (s *AuditService) Import(
 }
 
 func validateSnapshot(s *models.Snapshot) error {
-	if s.Version != "2.0" ||
+	if (s.Version != "2.0" && s.Version != "2.1") ||
 		s.CreatedAt.IsZero() ||
 		s.CreatedAt.After(time.Now().Add(5*time.Minute)) ||
 		strings.TrimSpace(s.System.Hostname) == "" {
 		return ErrInvalidSnapshot
+	}
+
+	if err := validateSnapshotSecurity(s); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidSnapshot, err)
 	}
 
 	if len(s.Files) == 0 {
@@ -69,12 +74,19 @@ func validateSnapshot(s *models.Snapshot) error {
 		if f.Path == "" || paths[f.Path] {
 			return fmt.Errorf("%w: duplicate or empty file path", ErrInvalidSnapshot)
 		}
-		if f.Type != "file" &&
-			f.Type != "directory" &&
-			f.Type != "symlink" {
-			return fmt.Errorf("%w: unsupported file type %q",
-				ErrInvalidSnapshot, f.Type)
+
+		switch f.Type {
+		case "file", "directory", "symlink", "socket":
+			// Тип поддерживается.
+		default:
+			return fmt.Errorf(
+				"%w: unsupported file type %q (path: %q)",
+				ErrInvalidSnapshot,
+				f.Type,
+				f.Path,
+			)
 		}
+
 		paths[f.Path] = true
 	}
 
@@ -96,10 +108,12 @@ func validateSnapshot(s *models.Snapshot) error {
 
 	services := make(map[string]bool)
 	for _, service := range s.Services {
-		if service.Name == "" || service.Name == "●" ||
-			services[service.Name] {
-			return fmt.Errorf("%w: invalid or duplicate service name %q",
-				ErrInvalidSnapshot, service.Name)
+		if service.Name == "" || service.Name == "●" || services[service.Name] {
+			return fmt.Errorf(
+				"%w: invalid or duplicate service name %q",
+				ErrInvalidSnapshot,
+				service.Name,
+			)
 		}
 		services[service.Name] = true
 	}
