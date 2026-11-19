@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"web-api/internal/analysis"
 	"web-api/internal/api"
 	"web-api/internal/api/handlers"
 	"web-api/internal/api/middleware"
@@ -32,37 +33,28 @@ func main() {
 	}
 	defer db.Close()
 
-	// Hosts
 	hostRepo := repository.NewHostRepository(db)
 	hostService := services.NewHostService(hostRepo)
 	hostHandler := handlers.NewHostHandler(hostService)
 
-	// Security policies
 	policyRepo := repository.NewPolicyRepository(db)
 	policyService := services.NewPolicyService(policyRepo)
 	policyHandler := handlers.NewPolicyHandler(policyService)
 
-	// Audits
 	auditRepo := repository.NewAuditRepository(db)
 	auditService := services.NewAuditService(auditRepo)
 	auditHandler := handlers.NewAuditHandler(auditService)
 
-	// Baselines
 	baselineRepo := repository.NewBaselineRepository(db)
 	baselineService := services.NewBaselineService(baselineRepo)
 	baselineHandler := handlers.NewBaselineHandler(baselineService)
 
-	// Reports
 	reportRepo := repository.NewReportRepository(db)
 	reportService := services.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 
-	// JWT authentication
 	authRepo := repository.NewAuthRepository(db)
-	authService := services.NewAuthService(
-		authRepo,
-		cfg.JWT.Secret,
-	)
+	authService := services.NewAuthService(authRepo, cfg.JWT.Secret)
 	authHandler := handlers.NewAuthHandler(authService)
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 
@@ -75,6 +67,10 @@ func main() {
 		authHandler,
 		authMiddleware,
 	)
+
+	analysisRepo := analysis.NewRepository(db)
+	analysisService := analysis.NewService(analysisRepo)
+	router = analysis.Register(router, analysisService, authMiddleware)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddress(),
