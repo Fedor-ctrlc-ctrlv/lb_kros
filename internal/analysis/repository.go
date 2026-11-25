@@ -138,8 +138,18 @@ func (r *Repository) Get(
 		return run, err
 	}
 
-	err = json.Unmarshal(summary, &run.Summary)
-	return run, err
+	if err := json.Unmarshal(summary, &run.Summary); err != nil {
+		return run, err
+	}
+
+	if run.Summary.PolicyEvaluation.Status == "" {
+		run.Summary.PolicyEvaluation = PolicyEvaluation{
+			Status: "not_recorded",
+			Reason: "This analysis predates explicit policy evaluation status",
+		}
+	}
+
+	return run, nil
 }
 
 func (r *Repository) Coverage(

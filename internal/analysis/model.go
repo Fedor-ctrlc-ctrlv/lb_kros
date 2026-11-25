@@ -12,7 +12,14 @@ type Check struct {
 	audit.Finding
 }
 
+type PolicyEvaluation struct {
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
 type Summary struct {
+	PolicyEvaluation PolicyEvaluation `json:"policy_evaluation"`
+
 	Changes   int            `json:"changes"`
 	BySection map[string]int `json:"by_section"`
 	ByKind    map[string]int `json:"by_kind"`

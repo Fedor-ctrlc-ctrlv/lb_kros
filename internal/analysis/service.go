@@ -80,12 +80,6 @@ func (s *Service) Create(
 		return run, conflict("both snapshots must be completed")
 	}
 
-	if input.PolicyID == nil || len(input.Policy) == 0 {
-		return run, conflict(
-			"assign a policy and configure its engine definition",
-		)
-	}
-
 	baseline, err := audit.DecodeSnapshot(input.Baseline)
 	if err != nil {
 		return run, conflict("invalid stored baseline: " + err.Error())
@@ -96,24 +90,19 @@ func (s *Service) Create(
 		return run, conflict("invalid stored snapshot: " + err.Error())
 	}
 
-	policy, err := audit.DecodePolicy(input.Policy)
-	if err != nil {
-		return run, conflict("invalid stored policy: " + err.Error())
-	}
-
 	diff, err := audit.Compare(baseline, current)
 	if err != nil {
 		return run, conflict(err.Error())
 	}
 
-	stateChecks, err := audit.Check(current, policy)
+	checks, evaluation, err := evaluatePolicy(
+		current,
+		diff,
+		input.PolicyID,
+		input.Policy,
+	)
 	if err != nil {
-		return run, conflict(err.Error())
-	}
-
-	changeChecks, err := audit.CheckChanges(diff, policy)
-	if err != nil {
-		return run, conflict(err.Error())
+		return run, err
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -122,26 +111,14 @@ func (s *Service) Create(
 
 	result := Result{
 		Diff:   diff,
-		Checks: []Check{},
-	}
-
-	for _, finding := range stateChecks {
-		result.Checks = append(result.Checks, Check{
-			Phase:   "state",
-			Finding: finding,
-		})
-	}
-	for _, finding := range changeChecks {
-		result.Checks = append(result.Checks, Check{
-			Phase:   "change",
-			Finding: finding,
-		})
+		Checks: checks,
 	}
 
 	summary := Summary{
-		Changes:   len(diff.Changes),
-		BySection: map[string]int{},
-		ByKind:    map[string]int{},
+		PolicyEvaluation: evaluation,
+		Changes:          len(diff.Changes),
+		BySection:        map[string]int{},
+		ByKind:           map[string]int{},
 		Checks: map[string]int{
 			"pass":    0,
 			"fail":    0,
@@ -153,20 +130,90 @@ func (s *Service) Create(
 		summary.BySection[change.Section]++
 		summary.ByKind[change.Kind]++
 	}
+
 	for _, check := range result.Checks {
 		summary.Checks[check.Status]++
+	}
+
+	policySnapshot := input.Policy
+	if input.PolicyID == nil {
+		policySnapshot = nil
 	}
 
 	run = Run{
 		CurrentID:     id,
 		BaselineID:    *input.BaselineID,
 		PolicyID:      input.PolicyID,
-		Policy:        input.Policy,
+		Policy:        policySnapshot,
 		EngineVersion: engineVersion(),
 		Summary:       summary,
 	}
 
 	return s.repo.Save(ctx, run, result)
+}
+
+func evaluatePolicy(
+	current audit.Snapshot,
+	diff audit.DiffReport,
+	policyID *int64,
+	raw json.RawMessage,
+) ([]Check, PolicyEvaluation, error) {
+	checks := []Check{}
+
+	if policyID == nil {
+		return checks, PolicyEvaluation{
+			Status: "not_assigned",
+			Reason: "No policy is assigned; only snapshot comparison was performed",
+		}, nil
+	}
+
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil, PolicyEvaluation{}, conflict(
+			"assigned policy has no engine definition",
+		)
+	}
+
+	policy, err := audit.DecodePolicy(raw)
+	if err != nil {
+		return nil, PolicyEvaluation{}, conflict(
+			"invalid stored policy: " + err.Error(),
+		)
+	}
+
+	if len(policy.StateRules) == 0 && len(policy.ChangeRules) == 0 {
+		return checks, PolicyEvaluation{
+			Status: "no_rules",
+			Reason: "The assigned policy contains no rules",
+		}, nil
+	}
+
+	stateChecks, err := audit.Check(current, policy)
+	if err != nil {
+		return nil, PolicyEvaluation{}, conflict(err.Error())
+	}
+
+	changeChecks, err := audit.CheckChanges(diff, policy)
+	if err != nil {
+		return nil, PolicyEvaluation{}, conflict(err.Error())
+	}
+
+	for _, finding := range stateChecks {
+		checks = append(checks, Check{
+			Phase:   "state",
+			Finding: finding,
+		})
+	}
+
+	for _, finding := range changeChecks {
+		checks = append(checks, Check{
+			Phase:   "change",
+			Finding: finding,
+		})
+	}
+
+	return checks, PolicyEvaluation{
+		Status: "evaluated",
+	}, nil
 }
 
 func (s *Service) Get(
