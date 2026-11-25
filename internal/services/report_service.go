@@ -8,7 +8,7 @@ import (
 	"web-api/internal/models"
 )
 
-var ErrInvalidSeverity = errors.New("invalid severity")
+var ErrInvalidReportFilter = errors.New("invalid report filter")
 
 type ReportStore interface {
 	HostsWithPolicies(context.Context) ([]models.HostPolicyReport, error)
@@ -43,25 +43,14 @@ func (s *ReportService) AuditsWithHosts(
 	return s.repo.AuditsWithHosts(ctx)
 }
 
-type PolicyRuleView struct {
-	PolicyName string `json:"policy_name"`
-	RuleType   string `json:"rule_type"`
-	Severity   string `json:"severity"`
-	Enabled    bool   `json:"enabled"`
-}
-
 func (s *ReportService) PolicyRules(
 	ctx context.Context,
-	severity string,
-) ([]PolicyRuleView, error) {
-	severity = strings.ToUpper(strings.TrimSpace(severity))
+	phase string,
+) ([]models.PolicyRuleReport, error) {
+	phase = strings.ToLower(strings.TrimSpace(phase))
 
-	if severity != "" &&
-		severity != "LOW" &&
-		severity != "MEDIUM" &&
-		severity != "HIGH" &&
-		severity != "CRITICAL" {
-		return nil, ErrInvalidSeverity
+	if phase != "" && phase != "state" && phase != "change" {
+		return nil, ErrInvalidReportFilter
 	}
 
 	rules, err := s.repo.PolicyRules(ctx)
@@ -69,21 +58,14 @@ func (s *ReportService) PolicyRules(
 		return nil, err
 	}
 
-	result := make([]PolicyRuleView, 0)
+	result := []models.PolicyRuleReport{}
 
 	for _, rule := range rules {
-		// Аналог LINQ
-		if severity != "" && string(rule.Severity) != severity {
+		if phase != "" && rule.Phase != phase {
 			continue
 		}
 
-		// Аналог LINQ для лабы...
-		result = append(result, PolicyRuleView{
-			PolicyName: rule.PolicyName,
-			RuleType:   string(rule.RuleType),
-			Severity:   string(rule.Severity),
-			Enabled:    rule.Enabled,
-		})
+		result = append(result, rule)
 	}
 
 	return result, nil

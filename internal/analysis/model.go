@@ -44,7 +44,6 @@ type Inputs struct {
 	PolicyID       *int64
 	CurrentStatus  string
 	BaselineStatus *string
-	LegacyEnabled  bool
 }
 
 type Filter struct {

@@ -64,20 +64,34 @@ func (h *ReportHandler) PolicyRules(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	severity := r.URL.Query().Get("severity")
+	if r.URL.Query().Has("severity") {
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			"severity is not supported; use phase=state or phase=change",
+		)
+		return
+	}
 
 	result, err := h.service.PolicyRules(
-		r.Context(), severity,
+		r.Context(),
+		r.URL.Query().Get("phase"),
 	)
 	if err != nil {
-		if errors.Is(err, services.ErrInvalidSeverity) {
-			response.Error(w, http.StatusBadRequest,
-				"severity must be LOW, MEDIUM, HIGH or CRITICAL")
+		if errors.Is(err, services.ErrInvalidReportFilter) {
+			response.Error(
+				w,
+				http.StatusBadRequest,
+				"phase must be state or change",
+			)
 			return
 		}
 
-		response.Error(w, http.StatusInternalServerError,
-			"failed to get report")
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"failed to get report",
+		)
 		return
 	}
 

@@ -34,13 +34,7 @@ func (r *Repository) Inputs(
 			b.raw_snapshot,
 			b.status,
 			p.id,
-			p.engine_policy,
-			EXISTS (
-				SELECT 1
-				FROM policy_rules pr
-				WHERE pr.policy_id = p.id
-					AND pr.enabled
-			)
+			p.engine_policy
 		FROM audits a
 		JOIN hosts h
 			ON h.id = a.host_id
@@ -59,7 +53,6 @@ func (r *Repository) Inputs(
 		&in.BaselineStatus,
 		&in.PolicyID,
 		&in.Policy,
-		&in.LegacyEnabled,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {

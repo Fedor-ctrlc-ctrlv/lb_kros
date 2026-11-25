@@ -86,12 +86,6 @@ func (s *Service) Create(
 		)
 	}
 
-	if input.LegacyEnabled {
-		return run, conflict(
-			"disable legacy policy_rules: the engine uses engine_policy",
-		)
-	}
-
 	baseline, err := audit.DecodeSnapshot(input.Baseline)
 	if err != nil {
 		return run, conflict("invalid stored baseline: " + err.Error())

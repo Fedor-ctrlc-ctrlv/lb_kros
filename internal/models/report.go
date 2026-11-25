@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type HostPolicyReport struct {
 	HostID     int64   `json:"host_id"`
@@ -30,10 +33,10 @@ type AuditHostReport struct {
 }
 
 type PolicyRuleReport struct {
-	PolicyID   int64    `json:"policy_id"`
-	PolicyName string   `json:"policy_name"`
-	RuleID     int64    `json:"rule_id"`
-	RuleType   RuleType `json:"rule_type"`
-	Severity   Severity `json:"severity"`
-	Enabled    bool     `json:"enabled"`
+	PolicyID   int64           `json:"policy_id"`
+	PolicyName string          `json:"policy_name"`
+	Phase      string          `json:"phase"`
+	RuleID     string          `json:"rule_id"`
+	Section    string          `json:"section"`
+	Definition json.RawMessage `json:"definition"`
 }

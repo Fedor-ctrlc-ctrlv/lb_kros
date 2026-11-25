@@ -154,21 +154,50 @@ func (r *ReportRepository) PolicyRules(
 		SELECT
 			p.id,
 			p.name,
-			pr.id,
-			pr.rule_type,
-			pr.severity,
-			pr.enabled
+			rules.phase,
+			COALESCE(rules.definition ->> 'id', ''),
+			COALESCE(rules.definition ->> 'section', ''),
+			rules.definition
 		FROM security_policies p
-		INNER JOIN policy_rules pr
-			ON pr.policy_id = p.id
-		ORDER BY p.id, pr.id
+		CROSS JOIN LATERAL (
+			SELECT
+				'state' AS phase,
+				entry AS definition,
+				position
+			FROM jsonb_array_elements(
+				COALESCE(
+					NULLIF(
+						p.engine_policy -> 'state_rules',
+						'null'::jsonb
+					),
+					'[]'::jsonb
+				)
+			) WITH ORDINALITY AS state_rules(entry, position)
+
+			UNION ALL
+
+			SELECT
+				'change' AS phase,
+				entry AS definition,
+				position
+			FROM jsonb_array_elements(
+				COALESCE(
+					NULLIF(
+						p.engine_policy -> 'change_rules',
+						'null'::jsonb
+					),
+					'[]'::jsonb
+				)
+			) WITH ORDINALITY AS change_rules(entry, position)
+		) AS rules
+		ORDER BY p.id, rules.phase, rules.position
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query policy rules: %w", err)
 	}
 	defer rows.Close()
 
-	result := make([]models.PolicyRuleReport, 0)
+	result := []models.PolicyRuleReport{}
 
 	for rows.Next() {
 		var item models.PolicyRuleReport
@@ -176,12 +205,12 @@ func (r *ReportRepository) PolicyRules(
 		if err := rows.Scan(
 			&item.PolicyID,
 			&item.PolicyName,
+			&item.Phase,
 			&item.RuleID,
-			&item.RuleType,
-			&item.Severity,
-			&item.Enabled,
+			&item.Section,
+			&item.Definition,
 		); err != nil {
-			return nil, fmt.Errorf("scan policy rule: %w", err)
+			return nil, err
 		}
 
 		result = append(result, item)

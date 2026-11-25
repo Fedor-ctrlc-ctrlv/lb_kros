@@ -32,26 +32,39 @@ func writePolicyError(w http.ResponseWriter, err error) {
 	var pgErr *pgconn.PgError
 
 	switch {
-	case errors.Is(err, services.ErrInvalidPolicy),
-		errors.Is(err, services.ErrInvalidRule):
+	case errors.Is(err, services.ErrInvalidPolicy):
 		response.Error(w, http.StatusBadRequest, err.Error())
 
-	case errors.Is(err, models.ErrPolicyNotFound),
-		errors.Is(err, models.ErrRuleNotFound):
+	case errors.Is(err, models.ErrPolicyNotFound):
 		response.Error(w, http.StatusNotFound, err.Error())
 
 	case errors.As(err, &pgErr) && pgErr.Code == "23505":
-		response.Error(w, http.StatusConflict, "policy or rule already exists")
+		response.Error(
+			w,
+			http.StatusConflict,
+			"policy already exists",
+		)
 
 	case errors.As(err, &pgErr) && pgErr.Code == "23503":
-		response.Error(w, http.StatusConflict, "policy is referenced by another entity")
+		response.Error(
+			w,
+			http.StatusConflict,
+			"policy is referenced by another entity",
+		)
 
 	default:
-		response.Error(w, http.StatusInternalServerError, "internal server error")
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+		)
 	}
 }
 
-func (h *PolicyHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *PolicyHandler) Create(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var input services.CreatePolicyInput
 	if err := decodeJSON(r, &input); err != nil {
 		response.Error(w, http.StatusBadRequest, "invalid JSON body")
@@ -67,16 +80,23 @@ func (h *PolicyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, result)
 }
 
-func (h *PolicyHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *PolicyHandler) List(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	result, err := h.service.List(r.Context())
 	if err != nil {
 		writePolicyError(w, err)
 		return
 	}
+
 	response.JSON(w, http.StatusOK, result)
 }
 
-func (h *PolicyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *PolicyHandler) GetByID(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id, err := parseID(r, "id")
 	if err != nil {
 		writePolicyError(w, err)
@@ -88,10 +108,14 @@ func (h *PolicyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		writePolicyError(w, err)
 		return
 	}
+
 	response.JSON(w, http.StatusOK, result)
 }
 
-func (h *PolicyHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *PolicyHandler) Update(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id, err := parseID(r, "id")
 	if err != nil {
 		writePolicyError(w, err)
@@ -109,10 +133,14 @@ func (h *PolicyHandler) Update(w http.ResponseWriter, r *http.Request) {
 		writePolicyError(w, err)
 		return
 	}
+
 	response.JSON(w, http.StatusOK, result)
 }
 
-func (h *PolicyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *PolicyHandler) Delete(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	id, err := parseID(r, "id")
 	if err != nil {
 		writePolicyError(w, err)
@@ -123,75 +151,6 @@ func (h *PolicyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		writePolicyError(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
-}
 
-func (h *PolicyHandler) CreateRule(w http.ResponseWriter, r *http.Request) {
-	policyID, err := parseID(r, "id")
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-
-	var input services.CreateRuleInput
-	if err := decodeJSON(r, &input); err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-
-	result, err := h.service.CreateRule(r.Context(), policyID, input)
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-	response.JSON(w, http.StatusCreated, result)
-}
-
-func (h *PolicyHandler) UpdateRule(w http.ResponseWriter, r *http.Request) {
-	policyID, err := parseID(r, "id")
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-	ruleID, err := parseID(r, "ruleID")
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-
-	var input services.UpdateRuleInput
-	if err := decodeJSON(r, &input); err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-
-	result, err := h.service.UpdateRule(
-		r.Context(), policyID, ruleID, input,
-	)
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-	response.JSON(w, http.StatusOK, result)
-}
-
-func (h *PolicyHandler) DeleteRule(w http.ResponseWriter, r *http.Request) {
-	policyID, err := parseID(r, "id")
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-	ruleID, err := parseID(r, "ruleID")
-	if err != nil {
-		writePolicyError(w, err)
-		return
-	}
-
-	if err := h.service.DeleteRule(
-		r.Context(), policyID, ruleID,
-	); err != nil {
-		writePolicyError(w, err)
-		return
-	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -77,20 +77,6 @@ func NewRouter(
 		access.RequireAdmin(policies.Delete),
 	)
 
-	// Policy rules
-	mux.HandleFunc(
-		"POST /api/v1/policies/{id}/rules",
-		access.RequireAdmin(policies.CreateRule),
-	)
-	mux.HandleFunc(
-		"PATCH /api/v1/policies/{id}/rules/{ruleID}",
-		access.RequireAdmin(policies.UpdateRule),
-	)
-	mux.HandleFunc(
-		"DELETE /api/v1/policies/{id}/rules/{ruleID}",
-		access.RequireAdmin(policies.DeleteRule),
-	)
-
 	// Snapshots and audits
 	mux.HandleFunc(
 		"POST /api/v1/hosts/{id}/snapshots",
